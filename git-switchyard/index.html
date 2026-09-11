@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Git Switchyard — Multi-Profile &amp; SSH Quick Reference</title>
+  <meta name="description" content="A printable reference for running multiple Git/SSH identities: checking your active profile, generating and wiring SSH keys, and switching safely between personal, work, and GitLab accounts.">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Git Switchyard">
+  <meta property="og:description" content="A printable reference for running multiple Git/SSH identities: checking your active profile, generating and wiring SSH keys, and switching safely between accounts.">
+
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛤️</text></svg>">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sheet">
+
+    <div class="print-bar">
+      <button id="print-btn" type="button">🖨 Print this sheet</button>
+    </div>
+
+    <header class="masthead">
+      <p class="eyebrow">Git &amp; SSH Quick Reference · Rev. 2026.09</p>
+      <h1 class="title">Switchyard</h1>
+      <p class="subtitle">Multi-Profile Routing Guide</p>
+      <p class="lede">Running a personal account, a work account, and maybe a GitLab account off one machine means every push needs to land on the right track. This is the order you check, wire, and test it in.</p>
+      <div class="stamp-row">
+        <span><strong>Format</strong> · one page, eight sidings</span>
+        <span><strong>Shell</strong> · bash / zsh</span>
+        <span><strong>Keys</strong> · ed25519</span>
+      </div>
+    </header>
+
+    <section class="crate">
+      <div class="crate-head">
+        <span class="crate-num">01</span>
+        <h2 class="crate-name">Check which track you're on</h2>
+      </div>
+      <p class="crate-note">Run these before you push, especially in a folder you didn't clone yourself. The third command is the one that actually explains a wrong identity — it shows <em>which file</em> set it.</p>
+      <div class="col-labels"><span>Command</span><span class="desc-label">What it does</span></div>
+      <div class="manifest-table">
+        <div class="cmd-row"><code class="cmd">git remote -v</code><span class="cmd-desc">Show the remote URL(s) this repo pushes to — and which host/account they point at</span></div>
+        <div class="cmd-row"><code class="cmd">git config user.name</code><span class="cmd-desc">Show the name that will be attached to commits made here</span></div>
+        <div class="cmd-row"><code class="cmd">git config user.email</code><span class="cmd-desc">Show the email that will be attached to commits made here</span></div>
+        <div class="cmd-row"><code class="cmd">git config --show-origin --show-scope user.email</code><span class="cmd-desc">Show <em>which config file</em> (local repo, global, or system) set that email</span></div>
+      </div>
+    </section>
+
+    <section class="crate">
+      <div class="crate-head">
+        <span class="crate-num">02</span>
+        <h2 class="crate-name">Lay a new key</h2>
+      </div>
+      <p class="crate-note">One key per identity. Give each a name when prompted (or with <code class="inline">-f</code>) so you never overwrite an existing one.</p>
+      <div class="col-labels"><span>Command</span><span class="desc-label">What it does</span></div>
+      <div class="manifest-table">
+        <div class="cmd-row"><code class="cmd">ssh-keygen -t ed25519 -C "you@example.com" -f ~/.ssh/id_ed25519_personal</code><span class="cmd-desc">Generate a new ed25519 key pair for one identity, saved under its own filename</span></div>
+        <div class="cmd-row"><code class="cmd">chmod 600 ~/.ssh/id_ed25519_personal</code><span class="cmd-desc">Lock the private key down to your user only — SSH refuses keys that are too open</span></div>
+      </div>
+    </section>
+
+    <section class="crate">
+      <div class="crate-head">
+        <span class="crate-num">03</span>
+        <h2 class="crate-name">Copy the public half</h2>
+      </div>
+      <p class="crate-note">Only the <code class="inline">.pub</code> file ever leaves your machine — paste it into GitHub/GitLab under Settings → SSH Keys. Never share or upload the private key.</p>
+      <div class="col-labels"><span>Command</span><span class="desc-label">What it does</span></div>
+      <div class="manifest-table">
+        <div class="cmd-row"><code class="cmd">pbcopy &lt; ~/.ssh/id_ed25519_personal.pub</code><span class="cmd-desc">Copy the public key to the clipboard (macOS)</span></div>
+        <div class="cmd-row"><code class="cmd">xclip -selection clipboard &lt; ~/.ssh/id_ed25519_personal.pub</code><span class="cmd-desc">Copy the public key to the clipboard (Linux)</span></div>
+        <div class="cmd-row"><code class="cmd">clip &lt; ~/.ssh/id_ed25519_personal.pub</code><span class="cmd-desc">Copy the public key to the clipboard (Windows, Git Bash)</span></div>
+        <div class="cmd-row"><code class="cmd">cat ~/.ssh/id_ed25519_personal.pub</code><span class="cmd-desc">Just print it, if you'd rather select and copy by hand</span></div>
+      </div>
+    </section>
+
+    <section class="crate">
+      <div class="crate-head">
+        <span class="crate-num">04</span>
+        <h2 class="crate-name">Wire the switchboard</h2>
+      </div>
+      <p class="crate-note">Edit <code class="inline">~/.ssh/config</code> (create it if it doesn't exist) and give every non-default identity its own <code class="inline">Host</code> alias. The alias is what routes traffic to the right key — SSH otherwise has no way to tell your accounts apart.</p>
+      <pre class="config-block"><code># Default GitHub account
+Host github.com
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/id_ed25519
+    IdentitiesOnly yes
+
+# Personal GitHub account
+Host github.com-personal
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/id_ed25519_personal
+    IdentitiesOnly yes
+
+# GitLab account
+Host gitlab.com
+    HostName gitlab.com
+    User git
+    IdentityFile ~/.ssh/id_ed25519_gitlab
+    IdentitiesOnly yes</code></pre>
+      <p class="crate-note">Then lock the file down the same way as the keys:</p>
+      <div class="manifest-table">
+        <div class="cmd-row"><code class="cmd">chmod 600 ~/.ssh/config</code><span class="cmd-desc">Restrict the config file to your user only</span></div>
+      </div>
+    </section>
+
+    <section class="crate">
+      <div class="crate-head">
+        <span class="crate-num">05</span>
+        <h2 class="crate-name">Test every siding</h2>
+      </div>
+      <p class="crate-note">Confirms SSH is picking the right key <em>before</em> you push anything. A working line answers with "Hi &lt;username&gt;! You've successfully authenticated…".</p>
+      <div class="col-labels"><span>Command</span><span class="desc-label">What it does</span></div>
+      <div class="manifest-table">
+        <div class="cmd-row"><code class="cmd">ssh -T git@github.com-personal</code><span class="cmd-desc">Test the personal GitHub alias</span></div>
+        <div class="cmd-row"><code class="cmd">ssh -T git@github.com</code><span class="cmd-desc">Test the default GitHub identity</span></div>
+        <div class="cmd-row"><code class="cmd">ssh -T git@gitlab.com</code><span class="cmd-desc">Test the GitLab identity</span></div>
+        <div class="cmd-row"><code class="cmd">ssh-add -l</code><span class="cmd-desc">List every key currently loaded into the SSH agent</span></div>
+      </div>
+    </section>
+
+    <section class="crate">
+      <div class="crate-head">
+        <span class="crate-num">06</span>
+        <h2 class="crate-name">Route a new clone</h2>
+      </div>
+      <p class="crate-note">Whenever you start a new repo under a non-default account, clone through that account's alias and set the identity locally — never globally, or it'll leak into every other repo.</p>
+      <div class="col-labels"><span>Command</span><span class="desc-label">What it does</span></div>
+      <div class="manifest-table">
+        <div class="cmd-row"><code class="cmd">git clone git@github.com-personal:&lt;username&gt;/&lt;repo&gt;.git</code><span class="cmd-desc">Clone using the personal alias, so pushes route through the personal key</span></div>
+        <div class="cmd-row"><code class="cmd">git remote set-url origin git@github.com-personal:&lt;username&gt;/&lt;repo&gt;.git</code><span class="cmd-desc">Repoint an already-cloned repo's remote at the correct alias</span></div>
+        <div class="cmd-row"><code class="cmd">git config --local user.name "&lt;Your Name&gt;"</code><span class="cmd-desc">Set the commit name for this repo only</span></div>
+        <div class="cmd-row"><code class="cmd">git config --local user.email "&lt;you@example.com&gt;"</code><span class="cmd-desc">Set the commit email for this repo only</span></div>
+      </div>
+    </section>
+
+    <section class="crate">
+      <div class="crate-head">
+        <span class="crate-num">07</span>
+        <h2 class="crate-name">Automate it by folder</h2>
+      </div>
+      <p class="crate-note">Setting <code class="inline">user.name</code>/<code class="inline">user.email</code> by hand in every new repo is exactly the step people forget. <code class="inline">includeIf</code> in <code class="inline">~/.gitconfig</code> switches identity automatically based on where the repo lives on disk — no per-repo command needed.</p>
+      <pre class="config-block"><code>[includeIf "gitdir:~/personal/"]
+    path = ~/.gitconfig-personal
+
+[includeIf "gitdir:~/work/"]
+    path = ~/.gitconfig-work</code></pre>
+      <p class="crate-note">Each of those points at a small file holding just the identity for that folder:</p>
+      <pre class="config-block"><code># ~/.gitconfig-personal
+[user]
+    name = &lt;Your Name&gt;
+    email = &lt;you@example.com&gt;</code></pre>
+    </section>
+
+    <section class="crate">
+      <div class="crate-head">
+        <span class="crate-num">08</span>
+        <h2 class="crate-name">Keep the agent loaded</h2>
+      </div>
+      <p class="crate-note">On macOS, the agent forgets keys on reboot unless you tell Keychain to hold them — do this once per key, and never retype a passphrase again.</p>
+      <div class="col-labels"><span>Command</span><span class="desc-label">What it does</span></div>
+      <div class="manifest-table">
+        <div class="cmd-row"><code class="cmd">ssh-add --apple-use-keychain ~/.ssh/id_ed25519_personal</code><span class="cmd-desc">Load the key into the agent and remember it in macOS Keychain (macOS)</span></div>
+        <div class="cmd-row"><code class="cmd">eval "$(ssh-agent -s)"</code><span class="cmd-desc">Start an SSH agent for the current shell session (Linux)</span></div>
+        <div class="cmd-row"><code class="cmd">ssh-add ~/.ssh/id_ed25519_personal</code><span class="cmd-desc">Load a key into the running agent (Linux)</span></div>
+      </div>
+    </section>
+
+    <footer class="ports">
+      <p class="ports-label">Before you publish or share a key</p>
+      <ul>
+        <li>Commit only <code class="inline">.pub</code> files anywhere, ever — a private key belongs on one machine, in <code class="inline">~/.ssh</code>, mode <code class="inline">600</code></li>
+        <li>Add <code class="inline">config</code> to your global <code class="inline">~/.ssh</code> — never to a repo's <code class="inline">.gitignore</code> as if that were protection; it should never be inside a repo at all</li>
+        <li>If a private key is ever pushed by accident, treat it as compromised: revoke it on the remote host and generate a fresh one — rewriting history does not undo the exposure</li>
+      </ul>
+      <p class="fine">Git Switchyard · Rev. 2026.09 · printable A4/Letter</p>
+    </footer>
+
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
